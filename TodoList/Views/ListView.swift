@@ -9,20 +9,34 @@ import SwiftUI
 
 struct ListView: View {
     
-    @State var item: [String] = [
-        "This is the first",
-        "This is the second",
-        "This is the third"
-    ]
+    @EnvironmentObject var listViewMode: ListViewModel
     
     var body: some View {
-        List{
-            
-            ForEach(item, id: \.self) { item in
-                ListRowView(title: item)
+        ZStack{
+            if listViewMode.items.isEmpty {
+                NoItemsView()
+                    .transition(AnyTransition.opacity.animation(.easeIn))
+            } else {
+                List{
+                    ForEach(listViewMode.items) { item in
+                        ListRowView(item: item)
+                            .onTapGesture {
+                                withAnimation(.linear) {
+                                    listViewMode.updateItem(item: item)
+                                }
+                            }
+                    }
+                    .onDelete { IndexSet in
+                        listViewMode.deleteItem(indexSet: IndexSet)
+                    }
+                    .onMove { IndexSet, newIndex in
+                        listViewMode.moveItem(from: IndexSet, to: newIndex)
+                    }
+                }
             }
             
         }
+        
         .listStyle(PlainListStyle())
         .navigationTitle("Todo List 🗒️")
         .navigationBarItems(
@@ -35,7 +49,7 @@ struct ListView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
             ListView()
-        }
+        }.environmentObject(ListViewModel())
     }
 }
 
