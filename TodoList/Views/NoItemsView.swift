@@ -33,6 +33,7 @@ struct NoItemsView: View {
             )
             .scaleEffect(animate ? 1.1 : 1.0)
         }
+        .frame(maxWidth: 400)
         .padding()
         .onAppear(perform: addAnimation)
     }
