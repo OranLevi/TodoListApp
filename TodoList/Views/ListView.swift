@@ -9,39 +9,42 @@ import SwiftUI
 
 struct ListView: View {
     
-    @EnvironmentObject var listViewMode: ListViewModel
+    @EnvironmentObject var listViewModel: ListViewModel
+    
+    @State var editMode: EditMode = .inactive
     
     var body: some View {
         ZStack{
-            if listViewMode.items.isEmpty {
+            if listViewModel.items.isEmpty {
                 NoItemsView()
                     .transition(AnyTransition.opacity.animation(.easeIn))
             } else {
                 List{
-                    ForEach(listViewMode.items) { item in
+                    ForEach(listViewModel.items) { item in
                         ListRowView(item: item)
                             .onTapGesture {
                                 withAnimation(.linear) {
-                                    listViewMode.updateItem(item: item)
+                                    listViewModel.updateItem(item: item)
                                 }
                             }
                     }
                     .onDelete { IndexSet in
-                        listViewMode.deleteItem(indexSet: IndexSet)
+                        listViewModel.deleteItem(indexSet: IndexSet)
                     }
                     .onMove { IndexSet, newIndex in
-                        listViewMode.moveItem(from: IndexSet, to: newIndex)
+                        listViewModel.moveItem(from: IndexSet, to: newIndex)
                     }
                 }
             }
-            
+        }.onAppear{
+            editMode = .inactive
         }
-        
         .listStyle(PlainListStyle())
         .navigationTitle("Todo List 🗒️")
         .navigationBarItems(
-            leading: EditButton(),
+            leading: listViewModel.items.isEmpty ? nil : EditButton(),
             trailing: NavigationLink("Add", destination: AddView()))
+        .environment(\.editMode, $editMode)
     }
 }
 
