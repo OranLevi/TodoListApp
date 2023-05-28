@@ -9,39 +9,36 @@ import SwiftUI
 
 struct ListView: View {
     
-    @EnvironmentObject var listViewMode: ListViewModel
+    @EnvironmentObject var listViewModel: ListViewModel
+    
+    @State var editMode: EditMode = .inactive
     
     var body: some View {
         ZStack{
-            if listViewMode.items.isEmpty {
+            if listViewModel.items.isEmpty {
                 NoItemsView()
                     .transition(AnyTransition.opacity.animation(.easeIn))
             } else {
-                List{
-                    ForEach(listViewMode.items) { item in
-                        ListRowView(item: item)
-                            .onTapGesture {
-                                withAnimation(.linear) {
-                                    listViewMode.updateItem(item: item)
-                                }
-                            }
-                    }
-                    .onDelete { IndexSet in
-                        listViewMode.deleteItem(indexSet: IndexSet)
-                    }
-                    .onMove { IndexSet, newIndex in
-                        listViewMode.moveItem(from: IndexSet, to: newIndex)
-                    }
+                VStack{
+                    sortSegment
+                    listItems
                 }
+                
             }
-            
+        }.onAppear{
+            editMode = .inactive
         }
-        
         .listStyle(PlainListStyle())
         .navigationTitle("Todo List 🗒️")
-        .navigationBarItems(
-            leading: EditButton(),
-            trailing: NavigationLink("Add", destination: AddView()))
+        .toolbar(content: {
+            ToolbarItem(placement: .navigationBarLeading) {
+                listViewModel.items.isEmpty ? nil : EditButton()
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink("Add", destination: AddView())
+            }
+        })
+        .environment(\.editMode, $editMode)
     }
 }
 
@@ -54,3 +51,42 @@ struct ListView_Previews: PreviewProvider {
 }
 
 
+extension ListView {
+    
+    private var listItems: some View {
+        List{
+            ForEach(listViewModel.items) { item in
+                ListRowView(item: item)
+                    .onTapGesture {
+                        withAnimation(.linear) {
+                            listViewModel.updateItem(item: item)
+                        }
+                    }
+            }
+            .onDelete { IndexSet in
+                listViewModel.deleteItem(indexSet: IndexSet)
+                listViewModel.sortList()
+            }
+            .onMove { IndexSet, newIndex in
+                listViewModel.moveItem(from: IndexSet, to: newIndex)
+            }
+        }
+    }
+    
+    private var sortSegment: some View {
+        Picker("Sort", selection: $listViewModel.selectedIndexSort) {
+            ForEach(listViewModel.sortListArray.indices, id: \.self) { index in
+                Text(listViewModel.sortListArray[index])
+                    .tag(index)
+            }
+        }
+        .cornerRadius(10)
+        .onChange(of: listViewModel.selectedIndexSort, perform: { value in
+            listViewModel.selectedIndexSort = value
+        })
+        .padding(4)
+        .padding(.horizontal)
+        .pickerStyle(.segmented)
+        
+    }
+}
