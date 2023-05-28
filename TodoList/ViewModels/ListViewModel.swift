@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 class ListViewModel: ObservableObject {
     
@@ -14,6 +15,11 @@ class ListViewModel: ObservableObject {
             saveItems()
         }
     }
+    
+    @Published var selectedIndexSort = 0
+    @Published var sortListArray = ["A-Z", "Completed", "Todo"]
+    
+    private var cancellables = Set<AnyCancellable>()
     
     let itemsKey = "items_list"
     
@@ -28,6 +34,7 @@ class ListViewModel: ObservableObject {
         else { return }
         
         self.items = saveItems
+        sortList()
     }
     
     func deleteItem(indexSet: IndexSet) {
@@ -36,12 +43,13 @@ class ListViewModel: ObservableObject {
     }
     
     func moveItem(from: IndexSet, to: Int) {
-        items.move(fromOffsets: from, toOffset: to  )
+        items.move(fromOffsets: from, toOffset: to)
     }
     
     func addItem(title:String){
         let newItem = itemModel(title: title, isCompleted: false)
         items.append(newItem)
+        sortList()
     }
     
     func updateItem(item: itemModel){
@@ -54,5 +62,21 @@ class ListViewModel: ObservableObject {
         if let encodeData = try? JSONEncoder().encode(items) {
             UserDefaults.standard.set(encodeData, forKey: itemsKey)
         }
+    }
+    
+    func sortList(){
+        $selectedIndexSort
+            .sink { [weak self] _ in
+                switch self?.selectedIndexSort {
+                case 0:
+                    self?.items.sort(by: {$0.title < $1.title})
+                case 1:
+                    self?.items.sort(by: {$0.isCompleted && !$1.isCompleted})
+                case 2:
+                    self?.items.sort(by: {$1.isCompleted && !$0.isCompleted})
+                default: break
+                }
+            }
+            .store(in: &cancellables)
     }
 }
